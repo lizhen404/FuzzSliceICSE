@@ -654,7 +654,7 @@ def analyze(srcml: Srcml, issues):
             logger.info("Testing :" + issue.test_file_path)
 
             if fuzz_tool == 1:
-                cc = "clang"
+                cc = "clang -lm"
                 func, concat_locations = minimize_target(srcml, issue)
                 if func is None:
                     continue
