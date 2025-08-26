@@ -4,7 +4,6 @@ venv/
 *.dat
 *.xml
 *.xml_fixed
-workspace/
 test_lib/
 *.o
 /out.log

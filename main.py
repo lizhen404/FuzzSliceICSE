@@ -654,38 +654,38 @@ def analyze(srcml: Srcml, issues):
             logger.info("Testing :" + issue.test_file_path)
 
             if fuzz_tool == 1:
-                cc = "gcc -fprofile-arcs -ftest-coverage"
+                cc = "clang"
                 func, concat_locations = minimize_target(srcml, issue)
                 if func is None:
                     continue
                 logger.info(
-                    "================================Compiling copy with coverage instrumentation================================"
+                    "================================Compiling================================"
                 )
                 # Switch the compiler to afl-clang
                 # cc = "gcc -fsanitize=address,undefined -fprofile-arcs -ftest-coverage"
                 # concat_locations = construct_concat_locations(issue)
                 add_main(issue, func, concat_locations)
 
-                if os.path.exists(issue.test_file_path[:-2] + ".out"):
-                    os.rename(
-                        issue.test_file_path[:-2] + ".out",
-                        issue.test_file_path[:-2] + ".cov",
-                    )
-                if os.path.exists(
-                    os.path.basename(issue.test_file_path[:-2] + ".gcno")
-                ):
-                    os.rename(
-                        os.path.basename(issue.test_file_path[:-2] + ".gcno"),
-                        issue.test_file_path[:-2] + ".gcno",
-                    )
+                # if os.path.exists(issue.test_file_path[:-2] + ".out"):
+                #     os.rename(
+                #         issue.test_file_path[:-2] + ".out",
+                #         issue.test_file_path[:-2] + ".cov",
+                #     )
+                # if os.path.exists(
+                #     os.path.basename(issue.test_file_path[:-2] + ".gcno")
+                # ):
+                #     os.rename(
+                #         os.path.basename(issue.test_file_path[:-2] + ".gcno"),
+                #         issue.test_file_path[:-2] + ".gcno",
+                #     )
 
-                logger.info(
-                    " ================================Now compiling with AFL body ==============================================="
-                )
-                # Switch the compiler to afl-clang
-                cc = "afl-clang-fast -g -O0 -w -fprofile-instr-generate -fcoverage-mapping"
-                # concat_locations = construct_concat_locations(issue)
-                add_main(issue, func, concat_locations)
+                # logger.info(
+                #     " ================================Now compiling with AFL body ==============================================="
+                # )
+                # # Switch the compiler to afl-clang
+                # cc = "afl-clang-fast -g -O0 -w -fprofile-instr-generate -fcoverage-mapping"
+                # # concat_locations = construct_concat_locations(issue)
+                # add_main(issue, func, concat_locations)
             else:
                 # Compile with libclang
                 cc = "clang -fsanitize=fuzzer,address -fsanitize-recover=address -fprofile-instr-generate -fcoverage-mapping -g"
@@ -1110,7 +1110,7 @@ def prep_preprocessed_output(location):
                                         search = search.replace("<", '"')
                                         search = search.replace(">", '"')
                                         result = re.search('"(.*)"', search)
-                                        if result.group(1):
+                                        if result and result.group(1):
                                             headerfile = os.path.normpath(result.group(1)).replace("../","")
                                             if headerfile in value:
                                                 lines.append(f'#include "{value}"\n')
@@ -1151,7 +1151,7 @@ def prep_preprocessed_output(location):
                                 search = search.replace("<", '"')
                                 search = search.replace(">", '"')
                                 result = re.search('"(.*)"', search)
-                                if result.group(1):
+                                if result and result.group(1):
                                     headerfile = os.path.basename(result.group(1))
                                     if headerfile in local_headers:
                                         if line not in local_headers[headerfile]:
@@ -1222,27 +1222,27 @@ if __name__ == "__main__":
             issues.append(Issue(test_location, file_tloc, lineno))
     if not log_report:
         analyze(lib_srcml, issues)
-        try:
-            Fuzzer.fuzz_binaries(test_library, fuzz_tool)
-        except timeout_decorator.TimeoutError:
-            logger.error("Fuzzing timed out")
-    else:
-        for issue in issues:
-            start = time.time()
-            analyze(lib_srcml, [issue])
-            compilable_slice = time.time()
-            try:
-                fuzz_data = Fuzzer.fuzz_binaries(test_library, fuzz_tool)
-            except timeout_decorator.TimeoutError:
-                fuzz_data = {"timed_out":True}
-            fuzzing_ends = time.time()
-            fuzz_data["time_compile"] = compilable_slice - start
-            fuzz_data["time_fuzz"] = fuzzing_ends - compilable_slice
-            fuzz_data["time_total"] = fuzzing_ends - start
-            fuzz_data["issue"] = issue.id + ":" + str(issue.orig_line)
-            with open(log_location, "a") as fp:
-                fp.write(json.dumps(fuzz_data)+"\n")
-    # for filename in iglob(test_location+'/**/*.c*',
-    #                        recursive = True):
-    #     remove_linemarkers(filename)
-    # run_clang_format()
+    #     try:
+    #         Fuzzer.fuzz_binaries(test_library, fuzz_tool)
+    #     except timeout_decorator.TimeoutError:
+    #         logger.error("Fuzzing timed out")
+    # else:
+    #     for issue in issues:
+    #         start = time.time()
+    #         analyze(lib_srcml, [issue])
+    #         compilable_slice = time.time()
+    #         try:
+    #             fuzz_data = Fuzzer.fuzz_binaries(test_library, fuzz_tool)
+    #         except timeout_decorator.TimeoutError:
+    #             fuzz_data = {"timed_out":True}
+    #         fuzzing_ends = time.time()
+    #         fuzz_data["time_compile"] = compilable_slice - start
+    #         fuzz_data["time_fuzz"] = fuzzing_ends - compilable_slice
+    #         fuzz_data["time_total"] = fuzzing_ends - start
+    #         fuzz_data["issue"] = issue.id + ":" + str(issue.orig_line)
+    #         with open(log_location, "a") as fp:
+    #             fp.write(json.dumps(fuzz_data)+"\n")
+    # # for filename in iglob(test_location+'/**/*.c*',
+    # #                        recursive = True):
+    # #     remove_linemarkers(filename)
+    # # run_clang_format()
